@@ -1,0 +1,12 @@
+[book]
+title = "EasyCo Blueprint"
+authors = ["EasyCo Project"]
+language = "en"
+src = "docs"
+
+[build]
+build-dir = "book"
+
+[output.html]
+git-repository-url = "https://github.com/emoop/easyco-blueprint"
+edit-url-template = "https://github.com/emoop/easyco-blueprint/edit/main/docs/{path}"
