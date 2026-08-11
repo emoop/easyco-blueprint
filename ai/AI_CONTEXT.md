@@ -1,62 +1,872 @@
-# AI Development Context: EasyCo (Леснотийка)
+# EasyCo AI Context
 
-This file serves as the system prompt and contextual anchor for all AI-assisted coding sessions on the EasyCo project. Read this file carefully before generating any code or proposing architectural changes.
+This document provides the current technical context for AI-assisted development of EasyCo.
 
----
+It is intended to prevent AI development sessions from making assumptions based on outdated conversations or implementing functionality that has already been completed.
 
-## 1. Project Overview
-* **Name:** EasyCo (Леснотийка)
-* **Vision:** A modular, high-performance, and secure e-commerce platform that combines WooCommerce's ease of use with the robust architecture of Laravel and Bagisto.
-* **Target Audience:** Small and medium-sized businesses.
+The repository state and the EasyCo Blueprint are authoritative.
 
 ---
 
-## 2. Technical Stack
-* **Base Commerce Engine:** Bagisto (v2.x)
-* **Framework:** Laravel (v10.x / v11.x)
-* **Frontend:** Tailwind CSS, Blade Templates, and Vue.js (depending on Bagisto's frontend stack)
-* **Database:** MySQL / PostgreSQL (via Laravel Eloquent ORM)
+## 1. Project
+
+**EasyCo (Леснотийка)** is an open-source e-commerce platform for small and medium-sized businesses.
+
+The primary goal is to provide a platform that is:
+
+* simple to operate
+* fast
+* secure
+* extensible
+* easy to deploy
+* suitable for small and medium-sized stores
+
+Core philosophy:
+
+> **Powerful under the hood. Simple in the hands of the merchant.**
+
+EasyCo aims to hide technical complexity from merchants while retaining the flexibility required by a modern e-commerce platform.
 
 ---
 
-## 3. The Golden Rule (Architecture Constraint)
-> **NEVER MODIFY THE BAGISTO CORE FILES.**
-Any changes, new features, or modifications must be developed strictly as **Laravel Packages** inside the `packages/` directory.
+## 2. Repository Structure
 
-### Extensibility Guidelines:
-* Use **Laravel Event Listeners** and Bagisto's internal events to hook into the checkout, order, and product life cycles.
-* Use **Service Providers** to load custom routes, controllers, views, and migrations.
-* Override Bagisto views only by registering custom themes or using view-overriding techniques supported by Laravel/Bagisto.
-* Extend Eloquent models using inheritance or custom relationships, never by editing files inside `vendor/` or the core package directory.
+The project is split between two repositories.
 
----
+### EasyCo
 
-## 4. Current Phase: Phase 1 – Foundation (EasyCo Core)
-We are currently starting **Phase 1 (EasyCo Core)**. The initial goals are:
-* Establish the base package structure under `packages/EasyCo/Core`.
-* Register the core service provider.
-* Set up configurations that override or adjust Bagisto defaults without core changes.
+Main source repository:
 
----
-
-## 5. Coding Principles for AI Assistants
-When writing or proposing code for EasyCo, ensure you:
-1. **Prefer Convention over Configuration:** Use standard Laravel and Bagisto directory structures.
-2. **Write Clean, Clean Code:** Focus on Object-Oriented PHP, strictly typed methods, and proper docblocks where necessary.
-3. **Use Repository Pattern:** Follow Bagisto's database interaction model by using Repositories instead of direct Eloquent queries in controllers where practical.
-4. **Security by Default:** Always validate requests using Laravel FormRequests, sanitize user inputs, and ensure proper authorization gates are checked.
-5. **Keep Upgrade Path Clean:** Ensure that updating the underlying Bagisto version in `composer.json` will not break EasyCo packages.
-
----
-
-## 6. Project Directory Structure (For reference)
 ```text
-bagisto-root/
-├── app/
+https://github.com/emoop/easyco
+```
+
+This repository contains the actual EasyCo source code and packages.
+
+### EasyCo Blueprint
+
+Architecture and development documentation:
+
+```text
+https://github.com/emoop/easyco-blueprint
+```
+
+The Blueprint contains:
+
+* architecture
+* technical decisions
+* RFCs
+* roadmap
+* development phases
+* AI development context
+* implementation guidance
+
+When implementation and documentation disagree, inspect the current repository and Blueprint before making assumptions.
+
+---
+
+## 3. Current Foundation
+
+EasyCo v1 is initially built on:
+
+* Laravel
+* Bagisto
+
+Bagisto is the initial **commerce engine**.
+
+Bagisto is not the identity of EasyCo.
+
+EasyCo should provide an independent platform and extension layer above the commerce engine.
+
+The intended architecture is:
+
+```text
+EasyCo
+   ↓
+EasyCo Modules / Extension Layer
+   ↓
+Bagisto
+   ↓
+Laravel
+```
+
+EasyCo must avoid unnecessary coupling to Bagisto internals.
+
+---
+
+## 4. Bagisto Integration Principle
+
+EasyCo must not modify Bagisto core unless there is an exceptional and explicitly justified architectural reason.
+
+Preferred mechanisms include:
+
+* Laravel packages
+* Service Providers
+* Composer package discovery
+* dependency injection
+* events
+* listeners
+* middleware
+* configuration
+* routes
+* views
+* Blade components
+* APIs
+* migrations
+* adapters
+* contracts
+* extension points provided by Bagisto
+
+Avoid direct modifications to:
+
+```text
+packages/Webkul/
+vendor/
+```
+
+unless a specific architectural decision explicitly permits it.
+
+The goal is to preserve a clean upgrade path for Bagisto.
+
+---
+
+## 5. Current Development Environment
+
+The current development application is a Bagisto installation running locally.
+
+Current project path:
+
+```text
+C:\laragon\www\mshop
+```
+
+Local application URL:
+
+```text
+http://mshop.test/
+```
+
+The project uses Composer path repositories for local EasyCo packages.
+
+Current root Composer configuration contains:
+
+```json
+"repositories": [
+    {
+        "type": "path",
+        "url": "packages/*/*",
+        "options": {
+            "symlink": true
+        }
+    }
+]
+```
+
+This allows EasyCo packages to be developed directly inside the Bagisto application while remaining independent Composer packages.
+
+---
+
+## 6. Current Laravel / Bagisto Versions
+
+The current Bagisto application uses:
+
+* Laravel 12.x
+* PHP 8.3.x
+* Bagisto 2.x
+
+Do not assume versions from older EasyCo discussions.
+
+Always inspect the current `composer.json` when version-specific implementation decisions are required.
+
+---
+
+# 7. Current Development Phase
+
+## Phase 1 — Foundation
+
+The project is currently in the initial **EasyCo Core / Foundation** phase.
+
+The initial package integration mechanism has already been implemented and verified.
+
+The following have been completed:
+
+* EasyCo package directory structure
+* Composer path repository integration
+* EasyCo Core Composer package
+* Laravel package discovery
+* automatic Core Service Provider registration
+* Core configuration
+* verification against a running Bagisto application
+
+The temporary `EasyCo/System` package was created only as a proof of concept and has been removed after the extension mechanism was verified.
+
+---
+
+# 8. Verified EasyCo Extension Mechanism
+
+A temporary package named:
+
+```text
+EasyCo/System
+```
+
+was created to verify how EasyCo packages can attach to Bagisto.
+
+The package successfully demonstrated:
+
+1. Composer path repository discovery.
+2. Installation as a Composer dependency.
+3. Laravel package discovery.
+4. Automatic Service Provider registration.
+5. Route loading using `loadRoutesFrom()`.
+6. Package configuration using `mergeConfigFrom()`.
+
+The temporary package was then removed.
+
+This means the mechanism is no longer theoretical.
+
+It has been tested against the real Bagisto application.
+
+---
+
+# 9. EasyCo Core
+
+The first permanent EasyCo package is:
+
+```text
+packages/EasyCo/Core
+```
+
+Current structure:
+
+```text
+packages/EasyCo/Core/
+├── composer.json
 ├── config/
-├── packages/
-│   └── EasyCo/
-│       ├── Core/            <-- Current Focus
-│       ├── Admin/
-│       └── Shipping/
-└── vendor/
+│   └── core.php
+└── src/
+    └── Providers/
+        └── CoreServiceProvider.php
+```
+
+---
+
+## 9.1 Core Composer Package
+
+Current package name:
+
+```text
+easyco/core
+```
+
+Package type:
+
+```text
+library
+```
+
+PSR-4 namespace:
+
+```text
+EasyCo\Core\
+```
+
+The package declares its Laravel Service Provider through Composer package discovery.
+
+Current provider:
+
+```text
+EasyCo\Core\Providers\CoreServiceProvider
+```
+
+The package is installed locally through the application's Composer path repository.
+
+---
+
+## 9.2 Core Service Provider
+
+Current provider:
+
+```text
+packages/EasyCo/Core/src/Providers/CoreServiceProvider.php
+```
+
+Its current responsibility is package configuration registration.
+
+Configuration is loaded using:
+
+```php
+$this->mergeConfigFrom(
+    __DIR__.'/../../config/core.php',
+    'easyco.core'
+);
+```
+
+The provider is discovered automatically by Laravel.
+
+It does not need to be manually added to Bagisto's application provider list.
+
+---
+
+## 9.3 Core Configuration
+
+Current configuration file:
+
+```text
+packages/EasyCo/Core/config/core.php
+```
+
+The configuration is available through Laravel's standard configuration system.
+
+Example:
+
+```php
+config('easyco.core.name');
+```
+
+The configuration was successfully tested through Laravel Tinker.
+
+Current initial configuration contains:
+
+```php
+return [
+    'enabled' => true,
+
+    'name' => 'EasyCo',
+
+    'version' => '1.0.0',
+];
+```
+
+This is currently foundation-level configuration only.
+
+Do not start adding unrelated functionality to Core simply because Core exists.
+
+---
+
+# 10. Important Architectural Decision
+
+EasyCo modules should be independent Laravel packages whenever practical.
+
+A typical EasyCo module should be structured similarly to:
+
+```text
+packages/EasyCo/<Module>/
+├── composer.json
+├── config/
+├── routes/
+├── resources/
+├── database/
+└── src/
+    └── Providers/
+```
+
+The exact structure may vary according to the module's requirements.
+
+Each module should own its own:
+
+* Service Provider
+* configuration
+* routes
+* views
+* migrations
+* translations
+* commands
+* services
+* events
+* listeners
+
+Core should not become a container for unrelated business functionality.
+
+---
+
+# 11. Core Responsibility
+
+EasyCo Core should remain deliberately small.
+
+Core may eventually provide shared infrastructure such as:
+
+* common contracts
+* shared services
+* module conventions
+* common events
+* extension infrastructure
+* common configuration conventions
+* shared utilities that genuinely belong to the platform foundation
+
+Business-specific functionality should live in dedicated modules.
+
+Examples:
+
+```text
+EasyCo/Shipping
+EasyCo/Marketing
+EasyCo/POS
+EasyCo/Analytics
+EasyCo/Notifications
+```
+
+should not automatically become part of:
+
+```text
+EasyCo/Core
+```
+
+Avoid creating abstractions until there is a real need for them.
+
+---
+
+# 12. Planned EasyCo Areas
+
+These are project goals, not necessarily implemented functionality.
+
+Always inspect the repository before claiming that a feature exists.
+
+Planned areas include:
+
+* Product management
+* Product variations
+* Media and catalog management
+* Shipping zones
+* Shipping rules
+* Speedy integration
+* Econt integration
+* BoxNow integration
+* Marketing
+* Meta Pixel
+* Meta Conversions API
+* POS
+* Online/offline inventory synchronization
+* Analytics
+* Business reporting
+* Security
+* Anti-bot protection
+* Performance
+* Caching
+* Storefront customization
+* Discounts
+* Promotional tools
+* Abandoned carts
+* Basic email marketing
+* Push notifications
+* AI-friendly catalog APIs
+* AI-friendly platform APIs
+* Simple deployment
+* Server installation and configuration
+
+These should be implemented incrementally.
+
+---
+
+# 13. Development Philosophy
+
+EasyCo development should follow:
+
+```text
+Problem
+   ↓
+Architecture / RFC
+   ↓
+Implementation
+   ↓
+Testing
+   ↓
+Documentation
+   ↓
+Commit
+```
+
+Prefer small working milestones over large speculative implementations.
+
+Do not implement large amounts of functionality before the underlying architecture has been verified.
+
+Do not over-engineer.
+
+Do not create abstractions merely because they might be useful someday.
+
+---
+
+# 14. AI Development Rules
+
+AI-assisted development must follow these rules.
+
+### Rule 1 — Inspect before changing
+
+Before implementing anything substantial:
+
+1. Inspect the current repository.
+2. Read the relevant Blueprint documentation.
+3. Read relevant RFCs.
+4. Read relevant AI context.
+5. Inspect the actual project files involved.
+6. Determine whether the requested functionality already exists.
+
+Never recreate functionality that already exists.
+
+---
+
+### Rule 2 — Repository is authoritative
+
+Previous conversations are not authoritative.
+
+The current repository is authoritative.
+
+If an older conversation says something different from the current code or Blueprint:
+
+1. inspect the current state
+2. identify the discrepancy
+3. explain it
+4. follow the current repository unless a new decision is explicitly made
+
+Do not silently rely on historical assumptions.
+
+---
+
+### Rule 3 — Keep scope focused
+
+When working on a milestone:
+
+* work only on the current objective
+* avoid unrelated refactoring
+* avoid speculative features
+* avoid unnecessary dependencies
+* avoid premature abstractions
+
+---
+
+### Rule 4 — Do not modify Bagisto core casually
+
+Before changing a Bagisto file, determine whether the same result can be achieved using:
+
+* a package
+* Service Provider
+* event
+* listener
+* middleware
+* configuration
+* dependency injection
+* route registration
+* view override
+* Blade component
+* API
+* adapter
+* contract
+* another supported extension mechanism
+
+Direct modification of Bagisto should be treated as an exception.
+
+---
+
+### Rule 5 — Verify with the real application
+
+Architecture should be validated against the actual Bagisto application rather than assumed from documentation alone.
+
+When testing package integration, prefer small concrete tests.
+
+Examples:
+
+* package discovery
+* Service Provider loading
+* configuration loading
+* route loading
+* event registration
+
+---
+
+# 15. Current Verified Tests
+
+The following tests have already succeeded.
+
+## Package Discovery
+
+Composer successfully installed:
+
+```text
+easyco/core
+```
+
+and Laravel package discovery reported:
+
+```text
+easyco/core ................................................................ DONE
+```
+
+---
+
+## Service Provider
+
+`CoreServiceProvider` was successfully discovered and executed automatically.
+
+This was verified by temporarily executing code from the provider during application boot.
+
+---
+
+## Configuration
+
+The following was successfully tested:
+
+```php
+config('easyco.core.name');
+```
+
+Result:
+
+```text
+EasyCo
+```
+
+The Core configuration therefore successfully loads through Laravel's package configuration mechanism.
+
+---
+
+# 16. Temporary System Package
+
+A temporary package was previously created:
+
+```text
+packages/EasyCo/System
+```
+
+Its purpose was solely to prove the package extension mechanism.
+
+It demonstrated:
+
+```text
+Composer
+   ↓
+Package Discovery
+   ↓
+Service Provider
+   ↓
+Routes
+   ↓
+Configuration
+```
+
+The package has now been removed from the application.
+
+Do not recreate `EasyCo/System` unless a new, explicit architectural reason exists.
+
+---
+
+# 17. Current Next Step
+
+The immediate next milestone is to define the **minimal shared foundation of EasyCo Core**.
+
+Before implementing additional infrastructure, determine exactly which responsibilities genuinely belong in Core.
+
+Potential next work:
+
+1. Define Core module conventions.
+2. Define shared contracts only where needed.
+3. Define common EasyCo services only where needed.
+4. Add automated tests for Core bootstrapping.
+5. Add automated tests for Core configuration.
+6. Document the Core architecture.
+7. Commit the completed milestone.
+
+The next implementation should remain small and testable.
+
+---
+
+# 18. Documentation Requirements
+
+Significant architectural decisions should be documented in the EasyCo Blueprint.
+
+Relevant documentation locations:
+
+```text
+docs/
+rfcs/
+ai/
+```
+
+The AI context should be updated whenever a significant implementation milestone changes the current state.
+
+Documentation should describe:
+
+* what has actually been implemented
+* what has been verified
+* what remains unfinished
+* important architectural constraints
+* the next intended milestone
+
+Do not document planned features as completed features.
+
+---
+
+# 19. Git and Release Discipline
+
+Prefer small meaningful commits.
+
+Examples:
+
+```text
+feat: add initial EasyCo Core package
+```
+
+```text
+test: verify Core package discovery
+```
+
+```text
+docs: document EasyCo Core foundation milestone
+```
+
+Avoid mixing unrelated features and documentation into large commits when a cleaner history is practical.
+
+Do not publish packages or create releases before the package is sufficiently stable.
+
+---
+
+# 20. Security
+
+Security is a core architectural concern.
+
+Do not introduce:
+
+* unnecessary dependencies
+* insecure defaults
+* arbitrary code execution mechanisms
+* unsafe file handling
+* unvalidated input processing
+* unnecessary access to Bagisto internals
+
+Composer security advisories must be investigated when they affect production dependencies.
+
+The current development application has reported Composer security advisories.
+
+These have not yet been resolved as part of the Core milestone.
+
+Do not silently upgrade or downgrade dependencies merely to eliminate the warning without first identifying the affected packages and compatibility implications.
+
+---
+
+# 21. Performance
+
+EasyCo is intended to be fast.
+
+Performance decisions should consider:
+
+* database queries
+* caching
+* HTTP response time
+* frontend payload
+* asset loading
+* background processing
+* queue usage
+* image handling
+* API efficiency
+
+Do not optimize prematurely.
+
+Measure before introducing complicated performance infrastructure.
+
+---
+
+# 22. Merchant Experience
+
+Technical complexity should remain hidden from the merchant wherever possible.
+
+EasyCo should prefer:
+
+```text
+Complex technical system
+        ↓
+Simple merchant interface
+```
+
+rather than exposing unnecessary configuration and infrastructure concepts to store owners.
+
+Power belongs underneath the interface.
+
+Simplicity belongs at the merchant level.
+
+---
+
+# 23. Overall Architectural Direction
+
+The intended long-term architecture is:
+
+```text
+                    EasyCo
+                      │
+        ┌─────────────┼─────────────┐
+        │             │             │
+      Core        Business       Integrations
+        │          Modules          │
+        │             │             │
+        └─────────────┼─────────────┘
+                      │
+                 Extension Layer
+                      │
+                    Bagisto
+                      │
+                    Laravel
+```
+
+EasyCo should use Bagisto as a proven commerce foundation while gradually providing a simpler and more cohesive platform experience.
+
+Bagisto should remain replaceable at the architectural boundary wherever practical.
+
+---
+
+# 24. Current State Summary
+
+At the current point in development:
+
+### Completed
+
+* EasyCo project direction defined.
+* Bagisto selected as the initial commerce engine.
+* Extension-first architecture established.
+* Composer path repository verified.
+* Temporary System package used to prove the extension mechanism.
+* Temporary System package removed.
+* EasyCo Core package created.
+* Core Composer package installed.
+* Laravel package discovery verified.
+* Core Service Provider verified.
+* Core configuration verified.
+* No Bagisto core modifications required for the current foundation.
+
+### Not yet completed
+
+* Core automated tests
+* Shared Core contracts
+* Shared Core services
+* Module conventions
+* EasyCo business modules
+* Shipping integrations
+* Marketing integrations
+* POS
+* Analytics
+* Storefront features
+* Deployment tooling
+* Production release process
+
+---
+
+# 25. AI Instruction
+
+When continuing EasyCo development:
+
+**Do not start by implementing features.**
+
+First determine:
+
+```text
+What exists?
+What is documented?
+What was already verified?
+What is the current milestone?
+What is the smallest correct next step?
+```
+
+Then implement only that step.
+
+The objective is not to build everything quickly.
+
+The objective is to build a clean, maintainable and extensible platform without accumulating unnecessary architectural debt.
+
+> **Powerful under the hood. Simple in the hands of the merchant.**

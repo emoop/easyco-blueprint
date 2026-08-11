@@ -1,6 +1,7 @@
 # EasyCo Blueprint
 
 * [Introduction](docs/01-introduction.md)
+- [Core Foundation](docs/02-core-foundation.md)
 * [Philosophy and Principles](docs/02-philosophy.md)
 * [Architecture](docs/03-architecture.md)
 * [Core Concepts](docs/04-core.md)
@@ -19,3 +20,4 @@
 * [Events and Extensibility](docs/17-events.md)
 * [Roadmap](docs/18-roadmap.md)
 * [RFC Process](docs/19-rfcs.md)
+
