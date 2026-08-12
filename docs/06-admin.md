@@ -1,13 +1,13 @@
-# Admin Experience (Easy Admin)
+# Admin & Storefront Experience (Easy Admin & Shop)
 
-The administrative panel is the primary touchpoint for merchants managing their online stores. While the underlying commerce engine (Bagisto) provides a solid technical framework, its native user interface is often too complex and fragmented for small and medium-sized businesses. 
+The administrative panel and the storefront (shop) are the primary touchpoints for merchants and customers. While the underlying commerce engine (Bagisto) provides a solid technical framework, its native user interface and default translations are often too complex or unlocalized for the local market.
 
-The goal of **Easy Admin** is to hide this complexity under an intuitive, simplified, and unified administrative experience, matching the usability of WooCommerce while preserving Laravel's robust scalability.
+The goal of **EasyCo** is to simplify and localize this entire experience under an intuitive, unified, and fully Bulgarian-localized environment, preserving Laravel's robust scalability without altering the core engine.
 
 ---
 
 ## 1. Architectural Core Principles
-To respect our strict **"Zero Modifications to Bagisto Core"** principle, Easy Admin relies on non-intrusive extension patterns rather than direct code overrides.
+To respect our strict **"Zero Modifications to Bagisto Core"** principle, both Admin and Storefront custom designs and translations rely on non-intrusive extension patterns.
 
 ### A. Runtime Menu & ACL Customization
 We do not modify Bagisto's `Webkul/Admin` configuration files. Instead, `EasyCo\Admin` dynamically registers new menus, submenus, and access control lists by merging configurations at runtime:
@@ -27,16 +27,23 @@ To avoid manual edits to the root `composer.json` for every new EasyCo feature, 
     $loader->addPsr4("EasyCo\\Admin\\", base_path('packages/EasyCo/Admin/src'));
     $this->app->register(\EasyCo\Admin\Providers\AdminServiceProvider::class);
 
-### C. Safe Memory-Injected Localization with Fallback
-Overriding translations in Laravel by simply swapping the namespace path removes all core translation keys, which breaks the application when fallback languages are used. 
+### C. Safe Memory-Injected Localization (Admin & Storefront)
+Overriding translations in Laravel by simply swapping the namespace path removes all core translation keys, breaking the application when fallback languages are used. 
 
-To solve this, Easy Admin uses an **in-memory injection pattern**:
+To solve this, EasyCo implements a unified **in-memory translation injection pattern** for both the Admin Panel and the Storefront (Shop):
+
+* **Admin Namespace (`admin::app`):** Custom translations in `EasyCo/Admin/.../lang/bg/app.php` are merged recursively over Bagisto's core English admin translations (`Webkul/Admin/.../lang/en/app.php`).
+* **Storefront Namespace (`shop::app`):** Custom storefront translations in `EasyCo/Admin/.../lang/bg/shop.php` are merged recursively over Bagisto's core English storefront translations (`Webkul/Shop/.../lang/en/app.php`).
+
+The process operates entirely in-memory during boot:
 1. Load the original, stable English (`en`) translations from Bagisto Core as a base.
 2. Load the custom, high-quality Bulgarian (`bg`) translations from the EasyCo package.
-3. Recursively merge the Bulgarian translations over the English ones.
-4. Inject this merged array directly into Laravel's `Translator` in-memory `$loaded` cache.
+3. Recursively merge the Bulgarian translations over the English ones using PHP's `array_replace_recursive`.
+4. Inject these merged arrays directly into Laravel's `Translator` in-memory `$loaded` cache (`$loaded['admin']['app']['bg']` and `$loaded['shop']['app']['bg']`).
 
-This ensures that **any untranslated string gracefully defaults to English** instead of displaying raw key paths like `admin::app.some.untranslated.key`.
+This approach achieves:
+* **100% Core Upgrade-Friendliness:** No core files are touched, and zero modifications are made to the root `composer.json` or `config/app.php` locales.
+* **Seamless Fallbacks:** Any key not yet translated into Bulgarian immediately and gracefully defaults to its English counterpart, eliminating raw translation key paths (e.g., `shop::app.checkout.mini-cart...`) from being displayed on the storefront.
 
 ---
 
