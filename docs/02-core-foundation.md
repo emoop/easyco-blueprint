@@ -94,7 +94,9 @@ The Laravel Service Provider is registered through Composer package discovery.
 
 ### Service Provider
 
-The Core Service Provider currently provides the package configuration:
+The Core Service Provider currently has two responsibilities: package configuration, and dynamic registration of EasyCo submodules.
+
+Configuration:
 
 ```php
 $this->mergeConfigFrom(
@@ -108,6 +110,15 @@ The configuration is accessible through Laravel's normal configuration system:
 ```php
 config('easyco.core.name');
 ```
+
+### Dynamic Submodule Registration
+
+`registerSubModules()` is the permanent replacement for the old manual `EasyCo/System` proof-of-concept. For each known submodule (currently just `Admin`), Core checks whether `packages/EasyCo/{Name}/src` exists, and if so:
+
+1. Registers the submodule's PSR-4 namespace at runtime via the Composer autoloader (`$loader->addPsr4(...)`).
+2. Registers the submodule's Service Provider with the Laravel container (`$this->app->register($providerClass)`).
+
+Adding a new submodule currently requires adding one entry to a hardcoded map inside `CoreServiceProvider` — no changes to root `composer.json` or Bagisto files. This map should eventually be replaced with real filesystem discovery once more than a couple of modules exist.
 
 ## Architectural Constraint
 
@@ -147,18 +158,18 @@ without requiring manual registration in Bagisto's application bootstrap.
 
 This provides a clean separation between the EasyCo layer and the underlying commerce engine.
 
+## First Submodule: EasyCo/Admin
+
+`EasyCo/Admin` is the first module registered through the mechanism above. It currently provides:
+
+* runtime menu injection into Bagisto's admin sidebar (`menu.admin`);
+* in-memory Bulgarian/English translation merging for both the admin and storefront namespaces;
+* a single verification route (`admin/easyco-test`).
+
+See `docs/06-admin.md` for the full description of this module and its planned UX work. This module's real functionality (product editor, Simple Mode config) has not started yet — the current route is a smoke test only.
+
 ## Next Step
 
-The next Core milestone is to establish the shared EasyCo foundation used by other modules.
-
-This should be kept intentionally small.
-
-Potential responsibilities include:
-
-* shared contracts
-* common events
-* module configuration conventions
-* shared services
-* common extension infrastructure
+Core's foundation and dynamic submodule registration are verified. Shared Core contracts/services should only be introduced once a second module creates a genuine, concrete need for them — not speculatively.
 
 Specific functionality should remain in dedicated EasyCo modules rather than being accumulated in Core.

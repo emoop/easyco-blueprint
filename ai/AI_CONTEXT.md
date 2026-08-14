@@ -197,8 +197,10 @@ The following have been completed:
 * automatic Core Service Provider registration
 * Core configuration
 * verification against a running Bagisto application
+* dynamic submodule registration mechanism in Core (`registerSubModules()`)
+* first business module: `EasyCo/Admin` (menu injection, bg/en translation merging, initial route)
 
-The temporary `EasyCo/System` package was created only as a proof of concept and has been removed after the extension mechanism was verified.
+The temporary `EasyCo/System` package was created only as a proof of concept and has been removed after the extension mechanism was verified. Its role has effectively been superseded by Core's `registerSubModules()` mechanism, which is now the permanent way EasyCo submodules attach themselves.
 
 ---
 
@@ -291,7 +293,10 @@ Current provider:
 packages/EasyCo/Core/src/Providers/CoreServiceProvider.php
 ```
 
-Its current responsibility is package configuration registration.
+Its current responsibilities are:
+
+1. Package configuration registration.
+2. Dynamic discovery and registration of EasyCo submodules.
 
 Configuration is loaded using:
 
@@ -305,6 +310,23 @@ $this->mergeConfigFrom(
 The provider is discovered automatically by Laravel.
 
 It does not need to be manually added to Bagisto's application provider list.
+
+---
+
+## 9.2.1 Dynamic Submodule Registration
+
+`CoreServiceProvider::registerSubModules()` is the current, permanent replacement for the old manual `EasyCo/System` proof-of-concept.
+
+It works as follows:
+
+1. A static map of known submodule names to their Service Provider class is declared inside `CoreServiceProvider` (currently only `Admin => EasyCo\Admin\Providers\AdminServiceProvider`).
+2. For each entry, Core checks whether `packages/EasyCo/{Name}/src` exists on disk.
+3. If it exists, Core registers the submodule's PSR-4 namespace at runtime using the Composer autoloader instance (`$loader->addPsr4(...)`).
+4. If the submodule's Service Provider class is available, Core registers it directly with the Laravel container (`$this->app->register($providerClass)`).
+
+This means a new EasyCo submodule can currently be picked up by adding its folder under `packages/EasyCo/` and adding one line to the `$modules` map in `CoreServiceProvider` — no changes to root `composer.json` or Bagisto files are required.
+
+Known limitation: the module map is currently a hardcoded array inside Core, not automatic filesystem discovery. This is acceptable for the current number of modules but should be revisited (e.g. filesystem scan or a manifest file) if the module count grows.
 
 ---
 
@@ -341,6 +363,88 @@ return [
 This is currently foundation-level configuration only.
 
 Do not start adding unrelated functionality to Core simply because Core exists.
+
+---
+
+## 9.4 EasyCo Admin Module (first business module)
+
+The first EasyCo business module has been implemented and verified:
+
+```text
+packages/EasyCo/Admin
+```
+
+Current structure:
+
+```text
+packages/EasyCo/Admin/
+├── composer.json
+└── src/
+    ├── Config/
+    │   └── menu.php
+    ├── Providers/
+    │   └── AdminServiceProvider.php
+    ├── Resources/
+    │   └── lang/
+    │       └── bg/
+    │           ├── app.php
+    │           └── shop.php
+    └── Routes/
+        └── web.php
+```
+
+### Composer package
+
+```text
+easyco/admin
+```
+
+PSR-4 namespace:
+
+```text
+EasyCo\Admin\
+```
+
+Registered via Core's `registerSubModules()` mechanism (see 9.2.1), not through the root `composer.json` provider list.
+
+### 9.4.1 Runtime Menu Injection
+
+`AdminServiceProvider::register()` merges `Config/menu.php` into Bagisto's `menu.admin` configuration key using `mergeConfigFrom()`.
+
+Currently registered menu entries:
+
+* `easyco` — top-level "EasyCo Panel" sidebar item.
+* `catalog.easyco_inventory` — submenu injected under Bagisto's existing "Catalog" menu via dot-notation.
+
+No Bagisto menu configuration files are modified directly.
+
+### 9.4.2 Bulgarian Localization (Admin + Storefront)
+
+`AdminServiceProvider::boot()` implements the in-memory translation injection pattern described in `docs/06-admin.md`:
+
+1. Sets the application locale to `bg`.
+2. Loads Bagisto's core English admin translations (`Webkul/Admin/.../lang/en/app.php`) and the EasyCo Bulgarian admin translations (`Admin/src/Resources/lang/bg/app.php`), merges them with `array_replace_recursive` (Bulgarian overrides English), and injects the result directly into the Laravel `Translator`'s in-memory `loaded` cache via reflection (`$loaded['admin']['app']['bg']`).
+3. Repeats the same process for the storefront (`shop::app`), merging `Webkul/Shop/.../lang/en/app.php` with `Admin/src/Resources/lang/bg/shop.php` into `$loaded['shop']['app']['bg']`.
+4. Wraps the whole operation in a try/catch as a safe-mode fallback.
+
+No core translation files are overwritten on disk; the merge happens entirely in memory at boot. Missing Bulgarian keys fall back to English automatically instead of showing raw translation keys.
+
+### 9.4.3 Initial Route
+
+`Routes/web.php` currently registers one route as a manual verification point:
+
+```text
+GET admin/easyco-test  →  name: admin.easyco.index
+```
+
+This route is a smoke test confirming the module boots and its routes load; it is not yet real admin functionality. Both menu entries in 9.4.1 currently point at this test route.
+
+### 9.4.4 Not Yet Implemented
+
+Per `docs/06-admin.md`, the following planned Admin UX work has **not** started yet:
+
+* WooCommerce-style unified product editor (single-page product creation, replacing Bagisto's multi-tab/reload flow).
+* Simplified Config "Simple Mode" (collapsing Bagisto's advanced settings behind an accordion, exposing only Store Name, Contact Email, Currency, Tax Rules by default).
 
 ---
 
@@ -651,21 +755,23 @@ Do not recreate `EasyCo/System` unless a new, explicit architectural reason exis
 
 # 17. Current Next Step
 
-The immediate next milestone is to define the **minimal shared foundation of EasyCo Core**.
+Core's foundation (configuration + dynamic submodule registration) and the first business module (`EasyCo/Admin` — menu injection, i18n merge, test route) are both verified. The immediate next milestone is to turn `EasyCo/Admin` from a proof-of-concept into real merchant-facing functionality.
 
-Before implementing additional infrastructure, determine exactly which responsibilities genuinely belong in Core.
+Two candidate directions from `docs/06-admin.md` (pick one, do not start both at once):
 
-Potential next work:
+1. **WooCommerce-style product editor** — a single-page product creation/edit flow (title, description, gallery, and Inventory/Shipping/Variations as accordion cards) replacing Bagisto's multi-tab reload-heavy flow.
+2. **Simplified Config "Simple Mode"** — collapse Bagisto's advanced settings behind an accordion, exposing only Store Name, Contact Email, Currency, Tax Rules by default.
 
-1. Define Core module conventions.
-2. Define shared contracts only where needed.
-3. Define common EasyCo services only where needed.
-4. Add automated tests for Core bootstrapping.
-5. Add automated tests for Core configuration.
-6. Document the Core architecture.
-7. Commit the completed milestone.
+RFC 0001 (EasyCo Extension Architecture) was formally **Accepted on 2026-08-14**; the codebase already conformed to it.
 
-The next implementation should remain small and testable.
+Also still open, lower priority than the above:
+
+1. Define shared Core contracts only where a real second module creates the need.
+2. Add automated tests for Core bootstrapping and submodule registration.
+3. Add automated tests for Admin's translation-merge logic.
+4. Replace the hardcoded submodule map in `CoreServiceProvider` with real discovery if/when more than a couple of modules exist.
+
+The next implementation should remain small and testable, and should replace the `admin/easyco-test` route rather than accumulate alongside it.
 
 ---
 
@@ -828,15 +934,23 @@ At the current point in development:
 * Laravel package discovery verified.
 * Core Service Provider verified.
 * Core configuration verified.
-* No Bagisto core modifications required for the current foundation.
+* Dynamic submodule registration mechanism (`registerSubModules()`) implemented in Core, replacing the old manual System-package approach.
+* First EasyCo business module, `EasyCo/Admin`, created and verified.
+* Admin: runtime menu injection into Bagisto's admin sidebar (`menu.admin`).
+* Admin: in-memory Bulgarian/English translation merging for both admin and storefront namespaces.
+* Admin: test route confirming module routes load correctly.
+* RFC 0001 (Extension Architecture) formally Accepted.
+* No Bagisto core modifications required so far.
 
 ### Not yet completed
 
 * Core automated tests
+* Admin translation-merge automated tests
 * Shared Core contracts
 * Shared Core services
-* Module conventions
-* EasyCo business modules
+* Module conventions documented
+* Real Admin functionality behind the test route (WooCommerce-style product editor, Simple Mode config)
+* Filesystem-based (non-hardcoded) submodule discovery in Core
 * Shipping integrations
 * Marketing integrations
 * POS

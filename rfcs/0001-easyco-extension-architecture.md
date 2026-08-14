@@ -1,7 +1,8 @@
 # RFC 0001: EasyCo Extension Architecture
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-08-11
+**Accepted:** 2026-08-14
 **Milestone:** 0.2
 **Area:** Architecture
 
@@ -803,3 +804,19 @@ Predictable upgrades
 ```
 
 **EasyCo should be easy to extend without becoming difficult to maintain.**
+
+---
+
+# 28. Acceptance Note
+
+Accepted 2026-08-14.
+
+At acceptance, the implementation already satisfies the criteria in section 26:
+
+* `EasyCo/Core` and `EasyCo/Admin` are installed as independent Composer packages via a local path repository.
+* Core's `registerSubModules()` provides explicit, declared module registration (currently a hardcoded map — acceptable for the current module count, flagged for revisit as the platform grows).
+* No Bagisto core files have been modified; all integration goes through Service Providers, `mergeConfigFrom()`, runtime PSR-4 registration, and in-memory translator injection.
+* `EasyCo/Admin`'s migrations/config/routes are self-contained within the module.
+* The architecture has been validated against a running Bagisto application, not just documented in theory.
+
+Open follow-ups tracked outside this RFC (see `ai/AI_CONTEXT.md` §17): replacing the hardcoded submodule map with real filesystem/manifest-based discovery, and adding automated tests for Core bootstrapping and submodule registration.
