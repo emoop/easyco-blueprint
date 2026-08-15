@@ -198,7 +198,7 @@ The following have been completed:
 * Core configuration
 * verification against a running Bagisto application
 * dynamic submodule registration mechanism in Core (`registerSubModules()`)
-* first business module: `EasyCo/Admin` (menu injection, bg/en translation merging, initial route)
+* first business module: `EasyCo/Admin` (menu injection, Bulgarian translation loader, translation merging, initial route)
 
 The temporary `EasyCo/System` package was created only as a proof of concept and has been removed after the extension mechanism was verified. Its role has effectively been superseded by Core's `registerSubModules()` mechanism, which is now the permanent way EasyCo submodules attach themselves.
 
@@ -389,8 +389,10 @@ packages/EasyCo/Admin/
     │       └── bg/
     │           ├── app.php
     │           └── shop.php
-    └── Routes/
-        └── web.php
+    ├── Routes/
+    │   └── web.php
+    └── Translation/
+        └── MergingTranslationLoader.php
 ```
 
 ### Composer package
@@ -420,14 +422,48 @@ No Bagisto menu configuration files are modified directly.
 
 ### 9.4.2 Bulgarian Localization (Admin + Storefront)
 
-`AdminServiceProvider::boot()` implements the in-memory translation injection pattern described in `docs/06-admin.md`:
+`EasyCo/Admin` provides a custom translation layer through:
 
-1. Sets the application locale to `bg`.
-2. Loads Bagisto's core English admin translations (`Webkul/Admin/.../lang/en/app.php`) and the EasyCo Bulgarian admin translations (`Admin/src/Resources/lang/bg/app.php`), merges them with `array_replace_recursive` (Bulgarian overrides English), and injects the result directly into the Laravel `Translator`'s in-memory `loaded` cache via reflection (`$loaded['admin']['app']['bg']`).
-3. Repeats the same process for the storefront (`shop::app`), merging `Webkul/Shop/.../lang/en/app.php` with `Admin/src/Resources/lang/bg/shop.php` into `$loaded['shop']['app']['bg']`.
-4. Wraps the whole operation in a try/catch as a safe-mode fallback.
+```text
+EasyCo\Admin\Translation\MergingTranslationLoader
+```
 
-No core translation files are overwritten on disk; the merge happens entirely in memory at boot. Missing Bulgarian keys fall back to English automatically instead of showing raw translation keys.
+`AdminServiceProvider` decorates Laravel's `translation.loader` service using the Laravel service container's `extend()` mechanism.
+
+For Bulgarian (`bg`), the custom loader:
+
+1. Loads the translation data through Laravel's original translation loader.
+2. Loads the corresponding English translation as a fallback.
+3. Loads the EasyCo Bulgarian translation file when one exists.
+4. Merges the available translation sources in memory using `array_replace_recursive()`.
+
+The intended priority is:
+
+```text
+English fallback
+       ↓
+Bagisto Bulgarian
+       ↓
+EasyCo Bulgarian
+```
+
+This means EasyCo translations override Bagisto translations where EasyCo provides a value, while keys not provided by EasyCo remain available from Bagisto or English fallback.
+
+Current EasyCo translation files are:
+
+```text
+packages/EasyCo/Admin/src/Resources/lang/bg/
+├── app.php
+└── shop.php
+```
+
+The loader also delegates Laravel's namespace registration, JSON translation path registration, and namespace discovery methods to the underlying translation loader.
+
+No Bagisto translation files are modified on disk.
+
+The translation layer is intentionally implemented inside `EasyCo/Admin`, because that module currently owns the EasyCo admin and storefront Bulgarian translations.
+
+It should only move into Core if a concrete second module requires the same shared translation infrastructure.
 
 ### 9.4.3 Initial Route
 
@@ -674,6 +710,7 @@ Examples:
 * configuration loading
 * route loading
 * event registration
+* translation loading and fallback behavior
 
 ---
 
@@ -723,6 +760,41 @@ The Core configuration therefore successfully loads through Laravel's package co
 
 ---
 
+## Admin Translation Loader
+
+The custom translation loader has been implemented as:
+
+```text
+packages/EasyCo/Admin/src/Translation/MergingTranslationLoader.php
+```
+
+It decorates Laravel's existing `translation.loader` service through `AdminServiceProvider`.
+
+The loader was verified against the running Bagisto application.
+
+Its purpose is to provide EasyCo Bulgarian translations without modifying Bagisto translation files.
+
+For Bulgarian translations, the effective priority is:
+
+```text
+English fallback
+       ↓
+Bagisto Bulgarian
+       ↓
+EasyCo Bulgarian
+```
+
+The EasyCo translation layer currently covers the admin and storefront namespaces through:
+
+```text
+packages/EasyCo/Admin/src/Resources/lang/bg/app.php
+packages/EasyCo/Admin/src/Resources/lang/bg/shop.php
+```
+
+The loader performs the merge in memory.
+
+---
+
 # 16. Temporary System Package
 
 A temporary package was previously created:
@@ -755,7 +827,9 @@ Do not recreate `EasyCo/System` unless a new, explicit architectural reason exis
 
 # 17. Current Next Step
 
-Core's foundation (configuration + dynamic submodule registration) and the first business module (`EasyCo/Admin` — menu injection, i18n merge, test route) are both verified. The immediate next milestone is to turn `EasyCo/Admin` from a proof-of-concept into real merchant-facing functionality.
+Core's foundation (configuration + dynamic submodule registration) and the first business module (`EasyCo/Admin` — menu injection, translation loader, Bulgarian translation merging, test route) are both verified.
+
+The immediate next milestone is to turn `EasyCo/Admin` from a proof-of-concept into real merchant-facing functionality.
 
 Two candidate directions from `docs/06-admin.md` (pick one, do not start both at once):
 
@@ -937,7 +1011,9 @@ At the current point in development:
 * Dynamic submodule registration mechanism (`registerSubModules()`) implemented in Core, replacing the old manual System-package approach.
 * First EasyCo business module, `EasyCo/Admin`, created and verified.
 * Admin: runtime menu injection into Bagisto's admin sidebar (`menu.admin`).
-* Admin: in-memory Bulgarian/English translation merging for both admin and storefront namespaces.
+* Admin: custom Laravel translation loader implemented through `MergingTranslationLoader`.
+* Admin: Bulgarian translation overlay for both admin and storefront namespaces.
+* Admin: English fallback and Bagisto Bulgarian translations are preserved through in-memory merging.
 * Admin: test route confirming module routes load correctly.
 * RFC 0001 (Extension Architecture) formally Accepted.
 * No Bagisto core modifications required so far.
@@ -984,3 +1060,4 @@ The objective is not to build everything quickly.
 The objective is to build a clean, maintainable and extensible platform without accumulating unnecessary architectural debt.
 
 > **Powerful under the hood. Simple in the hands of the merchant.**
+
